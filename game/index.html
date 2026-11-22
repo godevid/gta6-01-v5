@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PALM KEY HEAT — an open-world island crime game</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #06121f; height: 100%; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #game { display: block; width: 100vw; height: 100vh; }
+  #hud { position: fixed; inset: 0; pointer-events: none; font-family: "Trebuchet MS", Verdana, sans-serif; color: #fff; }
+  .panel { position: absolute; background: rgba(4, 18, 28, 0.72); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 10px; padding: 8px 12px; }
+  #cash { top: 12px; right: 12px; font-size: 22px; font-weight: 800; color: #7dff9a; text-shadow: 0 2px 0 rgba(0,0,0,.5); }
+  #cash small { display: block; font-size: 11px; color: #cfe8d8; font-weight: 400; letter-spacing: 1px; }
+  #stars { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-size: 26px; letter-spacing: 4px; text-shadow: 0 2px 0 rgba(0,0,0,.6); }
+  #clock { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); font-size: 13px; color: #dfeaff; text-shadow: 0 1px 0 rgba(0,0,0,.6); }
+  #objective { top: 12px; left: 12px; max-width: 330px; font-size: 14px; line-height: 1.45; }
+  #objective b { color: #ffd75e; }
+  #objective .sub { color: #bcd6e6; font-size: 12px; }
+  #health { bottom: 12px; right: 12px; width: 230px; }
+  #health .bar { height: 12px; background: rgba(255,255,255,.18); border-radius: 6px; overflow: hidden; margin-top: 4px; }
+  #health .fill { height: 100%; background: linear-gradient(90deg, #37e07a, #9dff6e); width: 100%; }
+  #health .row { display: flex; justify-content: space-between; font-size: 12px; }
+  #speed { position: absolute; bottom: 12px; left: 210px; font-size: 26px; font-weight: 800; text-shadow: 0 2px 0 rgba(0,0,0,.6); }
+  #speed small { font-size: 12px; font-weight: 400; color: #cfe8d8; }
+  #minimap { position: absolute; left: 12px; bottom: 12px; border: 2px solid rgba(255,255,255,.35); border-radius: 50%; box-shadow: 0 0 0 4px rgba(4,18,28,.55); background: #0a2536; }
+  #toast { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); font-size: 17px; font-weight: 700; text-align: center; color: #ffe9a8; text-shadow: 0 2px 0 rgba(0,0,0,.65); white-space: pre-line; }
+  #hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #dceefb; background: rgba(4,18,28,.6); padding: 5px 10px; border-radius: 8px; }
+  #banner { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; }
+  #banner h1 { margin: 0; font-size: 54px; letter-spacing: 4px; color: #ffd75e; text-shadow: 0 4px 0 #b3541e, 0 8px 24px rgba(0,0,0,.7); }
+  #banner p { margin: 6px 0 0; font-size: 18px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.6); }
+  #menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, rgba(6,32,54,.88), rgba(40,8,40,.82)); font-family: "Trebuchet MS", Verdana, sans-serif; color: #fff; z-index: 5; }
+  #menu .card { text-align: center; max-width: 620px; padding: 28px 34px; }
+  #menu h1 { margin: 0; font-size: 58px; letter-spacing: 5px; color: #ffd75e; text-shadow: 0 4px 0 #b3541e, 0 10px 30px rgba(0,0,0,.8); }
+  #menu h2 { margin: 4px 0 14px; font-size: 15px; letter-spacing: 6px; color: #7dffd4; font-weight: 400; }
+  #menu p { font-size: 15px; line-height: 1.6; color: #e8f4ff; }
+  #menu .btns { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  #menu button { pointer-events: auto; cursor: pointer; font-family: inherit; font-size: 16px; font-weight: 800; letter-spacing: 1px; color: #08222f; background: #ffd75e; border: none; border-radius: 10px; padding: 12px 22px; box-shadow: 0 4px 0 #b3541e; }
+  #menu button.secondary { background: #9fd8ff; box-shadow: 0 4px 0 #2b6a8f; }
+  #menu button:active { transform: translateY(3px); box-shadow: 0 1px 0 #b3541e; }
+  #menu .keys { margin-top: 16px; font-size: 12.5px; color: #bcd6e6; line-height: 1.9; }
+  #menu .keys b { color: #fff; background: rgba(255,255,255,.14); border-radius: 4px; padding: 1px 6px; }
+  #dialog { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); max-width: 560px; background: rgba(4,18,28,.88); border: 1px solid rgba(255,215,94,.5); border-radius: 12px; padding: 12px 16px; font-family: "Trebuchet MS", Verdana, sans-serif; color: #fff; display: none; z-index: 4; }
+  #dialog .who { color: #ffd75e; font-weight: 800; font-size: 13px; letter-spacing: 1px; }
+  #dialog .line { font-size: 15px; line-height: 1.5; margin-top: 2px; }
+  #dialog .next { font-size: 11px; color: #9fc6dd; margin-top: 6px; text-align: right; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="game" width="1280" height="720"></canvas></div>
+<div id="hud">
+  <div id="objective" class="panel" style="display:none"></div>
+  <div id="stars"></div>
+  <div id="clock"></div>
+  <div id="cash" class="panel" style="display:none"><small>PALM KEY DOLLARS</small><span id="cashval">$0</span></div>
+  <div id="health" class="panel" style="display:none">
+    <div class="row"><span>HEALTH</span><span id="armorval"></span></div>
+    <div class="bar"><div class="fill" id="healthfill"></div></div>
+    <div class="row" style="margin-top:4px"><span id="weaponval">FISTS</span><span id="ammoval"></span></div>
+  </div>
+  <div id="speed" style="display:none"><span id="speedval">0</span> <small>MPH</small></div>
+  <canvas id="minimap" width="180" height="180"></canvas>
+  <div id="toast"></div>
+  <div id="hint"></div>
+  <div id="banner"><h1 id="bannertitle"></h1><p id="bannertext"></p></div>
+</div>
+<div id="dialog"><div class="who" id="dialogwho"></div><div class="line" id="dialogline"></div><div class="next">press ENTER to continue</div></div>
+<div id="menu">
+  <div class="card">
+    <h1>PALM KEY HEAT</h1>
+    <h2>AN OPEN-WORLD ISLAND CRIME GAME</h2>
+    <p>You are <b>Jax Marlow</b>, fresh off the ferry in Palm Key with $50, a borrowed
+    jacket and a phone full of bad ideas. Rico, the fixer who runs the marina garage,
+    has six jobs for you — if you can stay out of the Palm Key PD's way long enough
+    to finish them.</p>
+    <p>Drive, steal, run, fight. The whole island is yours.</p>
+    <div class="btns">
+      <button id="btn-new">NEW GAME</button>
+      <button id="btn-continue" class="secondary" style="display:none">CONTINUE</button>
+      <button id="btn-freeroam" class="secondary">FREE ROAM</button>
+    </div>
+    <div class="keys">
+      <b>W A S D</b> move / drive &nbsp; <b>SHIFT</b> sprint &nbsp; <b>E</b> enter / exit car &nbsp; <b>SPACE</b> handbrake<br>
+      <b>F</b> punch &nbsp; <b>MOUSE</b> aim &nbsp; <b>CLICK</b> shoot (with a gun) &nbsp; <b>1 / 2</b> fists / pistol<br>
+      <b>P</b> pause &nbsp; <b>M</b> mute &nbsp; <b>R</b> repair at Pay N Spray ($80) &nbsp; <b>ENTER</b> advance dialogue
+    </div>
+  </div>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
